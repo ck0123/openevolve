@@ -1,0 +1,1 @@
+ 1    cd examples/function_minimization python ../../openevolve-run.py initial_program.py evaluator.py --config config.yaml
