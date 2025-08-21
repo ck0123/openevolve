@@ -1,0 +1,72 @@
+# Configuration for Triton Kernel Generation with OpenEvolve and KernelBench
+
+# Evolution settings
+max_iterations: 5
+checkpoint_interval: 2
+log_level: "INFO"
+parallel_evaluations: 1
+
+# LLM configuration - Using local vLLM
+# TODO: Replace 'http://localhost:8000/v1' with your actual vLLM server address and port
+# TODO: Replace 'your_triton_model' with the name of your model loaded in vLLM
+llm:
+  api_base: "http://localhost:8000/v1"
+  api_key: "none"
+  models:
+    - name: "your_triton_model"
+      weight: 1.0
+  temperature: 0.7
+  max_tokens: 4096
+  timeout: 120
+  retries: 3
+  retry_delay: 5
+
+# Prompt configuration
+prompt:
+  system_message: |
+    You are an expert Triton kernel developer. Your task is to write efficient Triton kernels to replace PyTorch operators in given neural network architectures. 
+    The goal is to optimize the architecture named 'Model' by replacing its operations with custom Triton kernels to achieve speedups.
+    You have complete freedom to choose which operators to replace. Consider operator fusion opportunities or algorithmic changes. Your optimized architecture must be named 'ModelNew'.
+    You will be provided with a reference PyTorch implementation (class Model) and example inputs.
+    Your response should be a complete, syntactically correct Python file containing the 'ModelNew' class with Triton kernels.
+    Only output the new model code, no other text, and NO testing code!
+    Focus on correctness first, then performance. The kernel must produce numerically identical results to the reference implementation.
+    Here is an example of the expected format:
+    ```
+    import torch
+    import torch.nn as nn
+    import triton
+    import triton.language as tl
+
+    @triton.jit
+    def your_kernel(...):
+        ...
+
+    class ModelNew(nn.Module):
+        def __init__(self):
+            super().__init__()
+            ...
+
+        def forward(self, ...):
+            ...
+            your_kernel[grid](...)
+            ...
+            return output
+    ```
+    Ensure the code compiles and runs correctly with the provided input shapes.
+  num_top_programs: 2
+  num_diverse_programs: 1
+
+# Database configuration (MAP-Elites algorithm)
+database:
+  population_size: 10
+  num_islands: 2
+  migration_interval: 2
+  feature_dimensions:
+    - "score"
+    - "complexity"
+
+# Evaluator configuration
+evaluator:
+  timeout: 300
+  max_retries: 2
